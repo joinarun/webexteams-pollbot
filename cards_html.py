@@ -177,6 +177,49 @@ QA_template={
                 }
 
 
+poll_preview_template=[
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "content": {
+        "type": "AdaptiveCard",
+        "version": "1.0",
+        "body": [
+	           {
+                   "type": "TextBlock",
+                   "text": "poll name",
+                   "weight": "Bolder",
+                   "color": "Accent"
+               },
+	           {
+                   "type": "TextBlock",
+                   "text": "poll description",
+                   "weight": "Lighter",
+                   "color": "Accent"
+               }
+                ],
+        "actions": [
+        {
+            "type": "Action.Submit",
+            "title": "Publish",
+            "id": "poll_publish",
+            "data": {
+                        "submit_value": "poll_publish",
+                        "poll_id": "",                        
+                    }
+        },
+        {
+            "type": "Action.Submit",
+            "title": "Abort",
+            "id": "poll_abort",
+            "data": {
+                        "submit_value": "poll_abort",
+                        "poll_id": "",                        
+                    }
+        }        
+                  ]
+               }
+    }]
+  
 poll_enduser_form_template=[
     {
       "contentType": "application/vnd.microsoft.card.adaptive",
@@ -204,14 +247,13 @@ poll_enduser_form_template=[
             "id": "poll_count",
             "data": {
                         "submit_value": "poll_enduser_submit",
-                        "poll_id": "SFD2342SDFSF5678",                        
+                        "poll_id": "",                        
                     }
         }
                   ]
                }
     }]
   
-
 
 def poll_form_generator(poll_qc=2):
     '''based on user input this function inserts 
@@ -287,6 +329,37 @@ def A_choiceset_generator(choiceList,k):
          i+=1
          A_choiceset_copy['choices'].append({'title':citems,'value':str(i)})
      return A_choiceset_copy
+
+def poll_preview_form_generator(poll_creator_form , poll_id): 
+    ''' receives the form submitted by poll creator. Using  this we 
+        generate the preview form'''
+    poll_preview_form_copy = copy.deepcopy(poll_preview_template)
+    poll_creator_form_copy = copy.deepcopy(poll_creator_form)
+    #copy poll name from creator submission form to enduser form
+    poll_preview_form_copy[0]['content']['body'][0]['text'] = poll_creator_form_copy['poll_name']
+    #copy poll description
+    poll_preview_form_copy[0]['content']['body'][1]['text'] = poll_creator_form_copy['poll_description']
+    
+    #copy poll_id to publish and abort actions of submit button
+    poll_preview_form_copy[0]['content']['actions'][0]['data']['poll_id'] = poll_id  
+    poll_preview_form_copy[0]['content']['actions'][1]['data']['poll_id'] = poll_id  
+    
+    #remove all other items except QA items
+    rem_list=['submit_value','poll_participants','poll_name','poll_description','share_public','poll_anonymous','poll_duration']
+    for rem_key in rem_list:
+       poll_creator_form_copy.pop(rem_key)     
+    for key in poll_creator_form_copy.keys():
+       if "Q" in key:
+          question = poll_creator_form_copy.get(key)
+          poll_preview_form_copy[0]['content']['body'].append(textblock_generator(question))
+       elif "A" in key:
+          answer = poll_creator_form_copy.get(key) 
+          if ',' in answer:
+              multi_choice = answer.split(',')
+              poll_preview_form_copy[0]['content']['body'].append(A_choiceset_generator(multi_choice,key))
+          else:
+              poll_preview_form_copy[0]['content']['body'].append(A_textinput_generator(key))                                 
+    return poll_preview_form_copy
      
      
 def poll_enduser_form_generator(poll_creator_form): 
@@ -294,7 +367,7 @@ def poll_enduser_form_generator(poll_creator_form):
         generate the end user form'''
     poll_enduser_form_copy = copy.deepcopy(poll_enduser_form_template)
     poll_creator_form_copy = copy.deepcopy(poll_creator_form)
-    #copy poll name from creator to enduser form
+    #copy poll name from creator submission form to enduser form
     poll_enduser_form_copy[0]['content']['body'][0]['text'] = poll_creator_form_copy['poll_name']
     #copy poll description
     poll_enduser_form_copy[0]['content']['body'][1]['text'] = poll_creator_form_copy['poll_description']
@@ -312,9 +385,7 @@ def poll_enduser_form_generator(poll_creator_form):
               multi_choice = answer.split(',')
               poll_enduser_form_copy[0]['content']['body'].append(A_choiceset_generator(multi_choice,key))
           else:
-              poll_enduser_form_copy[0]['content']['body'].append(A_textinput_generator(key))           
-          
-                    
-    
+              poll_enduser_form_copy[0]['content']['body'].append(A_textinput_generator(key))                                 
     return poll_enduser_form_copy
+    
     

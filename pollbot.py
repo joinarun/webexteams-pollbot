@@ -14,7 +14,7 @@ from webexteamssdk import WebexTeamsAPI, Webhook
 
 #custom modules
 from ngrok_webhook import *
-from cards_html import *
+from db_handler import *
 
 __author__ = "Arun Kumar Mani"
 __author_email__ = "arunman@cisco.com"
@@ -27,7 +27,8 @@ __license__ = "MIT"
 flask_app = Flask(__name__)
 
 # Create the Webex Teams API connection object
-api = WebexTeamsAPI(access_token='your access token here')
+api = WebexTeamsAPI(access_token='NmFkZjY0ZTEtYzczMi00ZTAwLThjNTYtMjgxZTNhZjEzNTkyOTdkMTlkMDItNDM5_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f')
+#api = WebexTeamsAPI(access_token='your access token here')
 
 #Delete previous webhooks. If local ngrok tunnel, create a webhook
 delete_webhooks_with_name(api, name=WEBHOOK_NAME)
@@ -119,6 +120,7 @@ def webex_teams_webhook_attachements():
         room = api.rooms.get(webhook_obj.data.roomId)
         # Get the sender's details
         person = api.people.get(webhook_obj.data.personId)
+              
         if webhook_obj.data.type == "submit":
             # Get the message details
             submit_json = api.attachment_actions.get(webhook_obj.data.id)       
@@ -146,14 +148,29 @@ def webex_teams_webhook_attachements():
                                     attachments= poll_form_generator(polls_qc)
                                     )                 
             elif submit_json.inputs['submit_value'] == "poll_creator_form":
-                print("poll_creator_form submission received") 
-                print("No of questions:")
-                print((submit_json.inputs.__len__()-7)/2) 
+                print("poll_creator_form submission received, sending preview form:")
+                #store the received submission form in db, this function also returns the form              
+                preview_form = save_formdetails(room,person,submit_json)  
+                    
                 api.messages.create(room.id, 
-                                    text='Poll form creator', 
-                                    attachments= poll_enduser_form_generator(submit_json.inputs)
+                                    text='Poll preview form', 
+                                    attachments= preview_form
                                     )
-                print(poll_enduser_form_generator(submit_json.inputs))                
+                print(preview_form)
+            elif submit_json.inputs['submit_value'] == "poll_publish":
+                print("poll_publish received, sending end user  form to all participants")
+                api.messages.create(room.id, 
+                                    text='Poll end user form sent to all participants', 
+                                    #attachments= end_user_form
+                                    )
+            elif submit_json.inputs['submit_value'] == "poll_abort":
+                print("poll_abort received, removing entry from db")
+                poll_abort_db(submit_json.inputs['poll_id'])
+                api.messages.delete(webhook_obj.data.messageId)
+                api.messages.create(room.id, 
+                                    text='poll canceled', 
+                                    #attachments= end_user_form
+                                    )                 
             elif submit_json.inputs['submit_value'] ==  "poll_stop":
                 print("poll_stop received")                 
             elif submit_json.inputs['submit_value'] == "poll_status":
