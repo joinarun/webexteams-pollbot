@@ -1,23 +1,41 @@
 import sqlite3
 import secrets
 import time
+import json
 from cards_html import *
 
 db_name = 'poll_bot.db'
 
 #functions for SQL queries
-def sql_query(query,var):
+def sql_query(col,tab,key,val):
+   '''b,c,d,e = "end_user_form","pollmaster","poll_id","SDFW342SC"
+        a = sql_query(b,c,d,e)    
+        print(a)
+        this might seem to pose security risk but in this app 
+        we dont get query from end user'''
    conn = sqlite3.connect(db_name)
-   conn.row_factory =sqlite3.Row
+   cur = conn.cursor()   
+   val="\""+val+"\""
+   #SELECT poll_name FROM pollmaster WHERE share_public="true"
+   qry = 'SELECT {} FROM {} WHERE {}={}'.format(col,tab,key,val)
+   print(qry)
+   cur.execute(qry)
+   rows = cur.fetchall()
+   conn.close()
+   return rows
+   
+def sql_query2(query,var):
+   conn = sqlite3.connect(db_name)
+   #conn.row_factory =sqlite3.Row
    cur = conn.cursor() 
    cur.execute(query,var)
    rows = cur.fetchall()
    conn.close()
    return rows
 
-def sql_query2(query):
+def sql_query3(query):
    conn = sqlite3.connect(db_name)
-   conn.row_factory =sqlite3.Row
+   #conn.row_factory =sqlite3.Row
    cur = conn.cursor() 
    cur.execute(query)
    rows = cur.fetchall()
@@ -68,7 +86,7 @@ create_tbl = '''CREATE TABLE IF NOT EXISTS pollmaster
              poll_duration TEXT , 
              creation_time TEXT , 
              table_pollid TEXT ,
-             end_user_form TEXT )'''
+             end_user_form JSON )'''
              
 sql_create(create_tbl)
              
@@ -85,6 +103,7 @@ def save_formdetails(room_name,person_name,submit_json):
     table_pollid = str("table_" + poll_id)
     
     preview_form = poll_preview_form_generator(submit_json.inputs , poll_id)
+    enduser_form = json.dumps(poll_enduser_form_generator(submit_json.inputs , poll_id) )
     qry = '''
         INSERT INTO pollmaster (poll_id, poll_participants, room,
                                 poll_owner, poll_name, share_public, 
@@ -94,7 +113,8 @@ def save_formdetails(room_name,person_name,submit_json):
                         
     sql_edit(qry,(poll_id, poll_participants, room,poll_owner,
                   poll_name, share_public,poll_anonymous, poll_duration, 
-                  creation_time,table_pollid,str(preview_form)))
+                  creation_time,table_pollid,enduser_form))
+                 
     print("entry added in database")
     return preview_form
     
@@ -102,3 +122,9 @@ def poll_abort_db(poll_id):
     qry = '''DELETE FROM pollmaster WHERE poll_id=?'''
     sql_edit(qry,(poll_id,))
     print("poll id: ", poll_id, " removed from db")
+    
+
+def fetch_end_user_form(poll_id_value):
+    euf = sql_query("end_user_form","pollmaster","poll_id",poll_id_value)
+    #print("============",json.loads(euf))
+    return json.loads(euf[0][0])

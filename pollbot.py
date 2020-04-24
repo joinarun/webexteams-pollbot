@@ -27,8 +27,8 @@ __license__ = "MIT"
 flask_app = Flask(__name__)
 
 # Create the Webex Teams API connection object
-api = WebexTeamsAPI(access_token='NmFkZjY0ZTEtYzczMi00ZTAwLThjNTYtMjgxZTNhZjEzNTkyOTdkMTlkMDItNDM5_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f')
-#api = WebexTeamsAPI(access_token='your access token here')
+
+api = WebexTeamsAPI(access_token='your access token here')
 
 #Delete previous webhooks. If local ngrok tunnel, create a webhook
 delete_webhooks_with_name(api, name=WEBHOOK_NAME)
@@ -149,28 +149,36 @@ def webex_teams_webhook_attachements():
                                     )                 
             elif submit_json.inputs['submit_value'] == "poll_creator_form":
                 print("poll_creator_form submission received, sending preview form:")
-                #store the received submission form in db, this function also returns the form              
-                preview_form = save_formdetails(room,person,submit_json)  
-                    
+                #saves end user form  in db, this function also returns the form
+                #this end user fomr is used to publish the poll after preview                   
+                preview_form = save_formdetails(room,person,submit_json) 
+                print(preview_form)                
                 api.messages.create(room.id, 
                                     text='Poll preview form', 
                                     attachments= preview_form
-                                    )
-                print(preview_form)
+                                    )               
             elif submit_json.inputs['submit_value'] == "poll_publish":
                 print("poll_publish received, sending end user  form to all participants")
+                end_user_form = fetch_end_user_form(submit_json.inputs['poll_id'])
+                print("End user form:",end_user_form)
                 api.messages.create(room.id, 
                                     text='Poll end user form sent to all participants', 
-                                    #attachments= end_user_form
-                                    )
+                                    attachments= end_user_form
+                                    )                                   
             elif submit_json.inputs['submit_value'] == "poll_abort":
                 print("poll_abort received, removing entry from db")
                 poll_abort_db(submit_json.inputs['poll_id'])
                 api.messages.delete(webhook_obj.data.messageId)
                 api.messages.create(room.id, 
-                                    text='poll canceled', 
+                                    text='poll canceled. Start again', 
                                     #attachments= end_user_form
-                                    )                 
+                                    ) 
+            elif submit_json.inputs['submit_value'] == "poll_enduser_submit":
+                print("poll_enduser_submit received, adding entry from db")
+                #api.messages.delete(webhook_obj.data.messageId)
+                api.messages.create(room.id, 
+                                    text='Thank you for your participation!', 
+                                    )                                            
             elif submit_json.inputs['submit_value'] ==  "poll_stop":
                 print("poll_stop received")                 
             elif submit_json.inputs['submit_value'] == "poll_status":
