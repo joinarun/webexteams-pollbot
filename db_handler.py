@@ -128,3 +128,8 @@ def fetch_end_user_form(poll_id_value):
     euf = sql_query("end_user_form","pollmaster","poll_id",poll_id_value)
     #print("============",json.loads(euf))
     return json.loads(euf[0][0])
+    
+def get_poll_participants(poll_id_value):
+    participants = sql_query("poll_participants","pollmaster","poll_id",poll_id_value)
+    return  participants[0][0].split(",")
+         

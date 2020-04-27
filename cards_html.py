@@ -186,6 +186,12 @@ poll_preview_template=[
         "body": [
 	           {
                    "type": "TextBlock",
+                   "text": "This is Preview form -> click 'Publish' or 'Abort' ",
+                   "weight": "Bolder",
+                   "color": "Attention"
+               },        
+	           {
+                   "type": "TextBlock",
                    "text": "poll name",
                    "weight": "Bolder",
                    "color": "Accent"
@@ -336,9 +342,9 @@ def poll_preview_form_generator(poll_creator_form , poll_id):
     poll_preview_form_copy = copy.deepcopy(poll_preview_template)
     poll_creator_form_copy = copy.deepcopy(poll_creator_form)   
     #copy poll name from creator submission form to enduser form
-    poll_preview_form_copy[0]['content']['body'][0]['text'] = poll_creator_form_copy['poll_name']
+    poll_preview_form_copy[0]['content']['body'][1]['text'] = poll_creator_form_copy['poll_name']
     #copy poll description
-    poll_preview_form_copy[0]['content']['body'][1]['text'] = poll_creator_form_copy['poll_description']
+    poll_preview_form_copy[0]['content']['body'][2]['text'] = poll_creator_form_copy['poll_description']
     
     #copy poll_id to publish and abort actions of submit button
     poll_preview_form_copy[0]['content']['actions'][0]['data']['poll_id'] = poll_id  

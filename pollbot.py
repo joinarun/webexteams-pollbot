@@ -11,6 +11,7 @@ from __future__ import (
 from builtins import *
 from flask import Flask, request
 from webexteamssdk import WebexTeamsAPI, Webhook
+import re
 
 #custom modules
 from ngrok_webhook import *
@@ -57,47 +58,51 @@ def webex_teams_webhook_events():
         print(json_data)
         print("\n")
 
-        # Create a Webhook object from the JSON data
-        webhook_obj = Webhook(json_data)
-        # Get the room details
-        room = api.rooms.get(webhook_obj.data.roomId)
-        # Get the message details
-        message = api.messages.get(webhook_obj.data.id)
-        # Get the sender's details
-        person = api.people.get(message.personId)
 
-        print("NEW MESSAGE IN ROOM '{}'".format(room.title))
-        print("FROM '{}'".format(person.displayName))
-        print("MESSAGE '{}'\n".format(message.text))
-
-        # This is a VERY IMPORTANT loop prevention control step.
-        # If you respond to all messages...  You will respond to the messages
-        # that the bot posts and thereby create a loop condition.
-        me = api.people.me()
-        if message.personId == me.id:
-            # Message was sent by me (bot); do not respond.
-            return 'OK'
-
-        else:
-            # Message was sent by someone else; parse message and respond.
-            if "/CAT" in message.text:
-                print("FOUND '/CAT'. Now sending adaptive card")
-                # Get a cat fact
-                #cat_fact = get_catfact()
-                #print("SENDING CAT FACT '{}'".format(cat_fact))
-                # Post the fact to the room where the request was received
-                api.messages.create(room.id, 
-                                    text="my adaptive card", 
-                                    attachments= default_message
-                                   )
-            else:
-                #default message
-                api.messages.create(room.id, 
-                                    text="This client doesnt support Adaptive cards", 
-                                    attachments= default_message
-                                   )                
-            return 'OK'
-            
+        try:
+          # Create a Webhook object from the JSON data
+          webhook_obj = Webhook(json_data)
+          # Get the room details
+          room = api.rooms.get(webhook_obj.data.roomId)
+          # Get the message details
+          message = api.messages.get(webhook_obj.data.id)
+           
+          # Get the sender's details
+          person = api.people.get(message.personId)
+          
+          print("NEW MESSAGE IN ROOM '{}'".format(room.title))
+          print("FROM '{}'".format(person.displayName))
+          print("MESSAGE '{}'\n".format(message.text))
+          
+          # This is a VERY IMPORTANT loop prevention control step.
+          # If you respond to all messages...  You will respond to the messages
+          # that the bot posts and thereby create a loop condition.
+          me = api.people.me()
+          if message.personId == me.id:
+              # Message was sent by me (bot); do not respond.
+              return 'OK'        
+          else:
+              # Message was sent by someone else; parse message and respond.
+              if "/CAT" in message.text:
+                  print("FOUND '/CAT'. Now sending adaptive card")
+                  # Get a cat fact
+                  #cat_fact = get_catfact()
+                  #print("SENDING CAT FACT '{}'".format(cat_fact))
+                  # Post the fact to the room where the request was received
+                  api.messages.create(room.id, 
+                                      text="my adaptive card", 
+                                      attachments= default_message
+                                      )
+              else:
+                  #default message
+                  api.messages.create(room.id, 
+                                      text="This client doesnt support Adaptive cards", 
+                                      attachments= default_message
+                                     )                
+              return 'OK'
+        except:
+          print("Couldnt retreive message")
+          return 'OK'          
             
             
 # Your Webex Teams webhook should point to http://<serverip>:5050/attachements
@@ -159,20 +164,57 @@ def webex_teams_webhook_attachements():
                                     )               
             elif submit_json.inputs['submit_value'] == "poll_publish":
                 print("poll_publish received, sending end user  form to all participants")
+                #get enduser form
                 end_user_form = fetch_end_user_form(submit_json.inputs['poll_id'])
-                print("End user form:",end_user_form)
-                api.messages.create(room.id, 
-                                    text='Poll end user form sent to all participants', 
-                                    attachments= end_user_form
-                                    )                                   
+                #get the list of participants
+                participants_list = get_poll_participants(submit_json.inputs['poll_id'])
+                #remove leading and trailing whitespace
+                participants_list = [x.strip() for x in participants_list]
+                print("stripped list:",participants_list)
+                #get the list of all rooms this Bot is part of
+                all_rooms = api.rooms.list(type="group")
+                all_room_title = [room.title for room in all_rooms]
+                print ("all_room_title: ",all_room_title)
+                #validate email ids and rooms
+                regex = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
+                participant_check = True                
+                for participant in participants_list:
+                   if(re.search(regex,participant)):  
+                       print(participant,"Valid Email")
+                   elif [c for c in all_room_title if c in participant]:  
+                       #if its not email id then it should be room title , validate it from all_rooms
+                       print(participant, " is valid room")
+                   else:
+                       participant_check = False
+                       error_msg = "email or Team Space: \"" + participant + "\" is invalid. Cannot publish. Start over"
+                       print(error_msg)                       
+                       api.messages.delete(webhook_obj.data.messageId)
+                       poll_abort_db(submit_json.inputs['poll_id'])
+                       api.messages.create(room.id, text=error_msg)  
+                       break       
+                          
+                if participant_check:
+                   for participant in participants_list:
+                     if(re.search(regex,participant)):  
+                        print("Sending enduser form to email: ",  participant)
+                        api.messages.create(toPersonEmail=participant, 
+                                            text='Poll end user form sent to all participants', 
+                                            attachments= end_user_form) 
+                     else:
+                          room_id = [room.id for room in all_rooms if room.title in participant]
+                          print("Sending enduser form to team space: ",participant , "with room_id: ", room_id[0])
+                          api.messages.create(room_id[0], 
+                                              text='Poll end user form sent to all participants', 
+                                              attachments= end_user_form
+                                               )                 
+
+                                  
             elif submit_json.inputs['submit_value'] == "poll_abort":
                 print("poll_abort received, removing entry from db")
                 poll_abort_db(submit_json.inputs['poll_id'])
                 api.messages.delete(webhook_obj.data.messageId)
                 api.messages.create(room.id, 
-                                    text='poll canceled. Start again', 
-                                    #attachments= end_user_form
-                                    ) 
+                                    text='poll canceled. Start again',) 
             elif submit_json.inputs['submit_value'] == "poll_enduser_submit":
                 print("poll_enduser_submit received, adding entry from db")
                 #api.messages.delete(webhook_obj.data.messageId)
