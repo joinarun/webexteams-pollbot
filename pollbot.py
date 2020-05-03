@@ -12,6 +12,7 @@ from builtins import *
 from flask import Flask, request
 from webexteamssdk import WebexTeamsAPI, Webhook
 import re
+import time
 
 #custom modules
 from ngrok_webhook import *
@@ -29,7 +30,7 @@ flask_app = Flask(__name__)
 
 # Create the Webex Teams API connection object
 
-api = WebexTeamsAPI(access_token='your access token here')
+#api = WebexTeamsAPI(access_token='your access token here')
 
 #Delete previous webhooks. If local ngrok tunnel, create a webhook
 delete_webhooks_with_name(api, name=WEBHOOK_NAME)
@@ -40,8 +41,7 @@ if public_url is not None:
    create_ngrok_attachementwebhook(api, public_url)
 
 # Core bot functionality
- 
-        
+              
 # Your Webex Teams webhook should point to http://<serverip>:5050/attachements
 @flask_app.route('/events', methods=['GET', 'POST'])
 def webex_teams_webhook_events():
@@ -194,12 +194,18 @@ def webex_teams_webhook_attachements():
                        break       
                           
                 if participant_check:
+                   #create a new table 
+                   create_enduser_table(submit_json.inputs['poll_id'])
                    for participant in participants_list:
                      if(re.search(regex,participant)):  
                         print("Sending enduser form to email: ",  participant)
-                        api.messages.create(toPersonEmail=participant, 
-                                            text='Poll end user form sent to all participants', 
-                                            attachments= end_user_form) 
+                        rsp_msg = api.messages.create(toPersonEmail=participant, 
+                                                      text='Poll end user form sent to all participants', 
+                                                      attachments= end_user_form) 
+                        print("rsp_msg: ", rsp_msg)
+                        msg_id = "dummmy"
+                        #save_msg_id(poll_id_value, msg_id , person_name, room_name
+                        save_msg_id(submit_json.inputs['poll_id'] , msg_id,)                        
                      else:
                           room_id = [room.id for room in all_rooms if room.title in participant]
                           print("Sending enduser form to team space: ",participant , "with room_id: ", room_id[0])

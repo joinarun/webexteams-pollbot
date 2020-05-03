@@ -133,3 +133,33 @@ def get_poll_participants(poll_id_value):
     participants = sql_query("poll_participants","pollmaster","poll_id",poll_id_value)
     return  participants[0][0].split(",")
          
+def create_enduser_table(poll_id_value):
+    #columns poll_id , msg_id , time_stamp, room_person_name, A1, A2, A3
+    #extract choices value and store in array
+    polltable = sql_query("table_pollid","pollmaster","poll_id",poll_id_value)
+    create_tbl = '''CREATE TABLE IF NOT EXISTS "''' + polltable[0][0]                  
+    create_tbl = create_tbl + '''" ("SNO" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
+                 poll_id NOT NULL, 
+                 msg_id NOT NULL,
+                 room_name TEXT  ,
+                 person_name TEXT  ,
+                 rcvd_time TEXT  '''
+                 
+    #get the number of answers
+    euf_dump = sql_query("end_user_form","pollmaster","poll_id",poll_id_value)
+    euf_dump = json.loads(euf_dump[0][0])
+    ans_count = int((len(euf_dump[0]['content']['body']) - 2) / 2 ) 
+    ans_column = ""
+    for i in range(ans_count):
+       ans_column = ans_column + ", A" + str(i+1) + " TEXT"
+    create_tbl = create_tbl +  ans_column + ")"
+    print("Table created: ", polltable[0][0])
+    sql_create(create_tbl) 
+    
+def save_msg_id(poll_id_value, msg_id , person_name, room_name):
+    polltable = sql_query("table_pollid","pollmaster","poll_id",poll_id_value)
+    qry = "INSERT INTO " + polltable 
+    qry = qry + ''' (poll_id, msg_id, room_name, person_name, rcvd_time) VALUES 
+                    (?,?,?,?,?) '''
+    rcvd_time = #find epoch time                    
+    sql_edit(qry,(poll_id_value, msg_id, person_name,room_name,rcvd_time))        
