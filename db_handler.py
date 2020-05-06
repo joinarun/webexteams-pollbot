@@ -1,10 +1,12 @@
 import sqlite3
 import secrets
 import time
+import datetime
 import json
 from cards_html import *
 
 db_name = 'poll_bot.db'
+datetimeFormat = '%Y-%m-%d %H:%M:%S.%f'
 
 #functions for SQL queries
 def sql_query(col,tab,key,val):
@@ -158,8 +160,9 @@ def create_enduser_table(poll_id_value):
     
 def save_msg_id(poll_id_value, msg_id , person_name, room_name):
     polltable = sql_query("table_pollid","pollmaster","poll_id",poll_id_value)
-    qry = "INSERT INTO " + polltable 
-    qry = qry + ''' (poll_id, msg_id, room_name, person_name, rcvd_time) VALUES 
+    qry = '''INSERT INTO "''' + str(polltable[0][0]) 
+    qry = qry + '''" (poll_id, msg_id, room_name, person_name, rcvd_time) VALUES 
                     (?,?,?,?,?) '''
-    rcvd_time = #find epoch time                    
+    rcvd_time = str(datetime.datetime.now())   
+    print("==========",qry,poll_id_value, msg_id, person_name,room_name,rcvd_time)    
     sql_edit(qry,(poll_id_value, msg_id, person_name,room_name,rcvd_time))        

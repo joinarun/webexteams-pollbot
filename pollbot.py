@@ -201,19 +201,19 @@ def webex_teams_webhook_attachements():
                         print("Sending enduser form to email: ",  participant)
                         rsp_msg = api.messages.create(toPersonEmail=participant, 
                                                       text='Poll end user form sent to all participants', 
-                                                      attachments= end_user_form) 
-                        print("rsp_msg: ", rsp_msg)
-                        msg_id = "dummmy"
-                        #save_msg_id(poll_id_value, msg_id , person_name, room_name
-                        save_msg_id(submit_json.inputs['poll_id'] , msg_id,)                        
+                                                      attachments= end_user_form)
+                        msg_id = rsp_msg.id
+                        
                      else:
                           room_id = [room.id for room in all_rooms if room.title in participant]
                           print("Sending enduser form to team space: ",participant , "with room_id: ", room_id[0])
-                          api.messages.create(room_id[0], 
+                          rsp_msg = api.messages.create(room_id[0], 
                                               text='Poll end user form sent to all participants', 
-                                              attachments= end_user_form
-                                               )                 
-
+                                              attachments= end_user_form)
+                          msg_id = rsp_msg.id
+                     print("msg_id-------",msg_id)     
+                     #save_msg_id(poll_id_value, msg_id , person_name, room_name)
+                     save_msg_id(submit_json.inputs['poll_id'] , msg_id,str(person.displayName) ,str(room.title))
                                   
             elif submit_json.inputs['submit_value'] == "poll_abort":
                 print("poll_abort received, removing entry from db")
