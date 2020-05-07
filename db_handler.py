@@ -144,7 +144,7 @@ def create_enduser_table(poll_id_value):
                  poll_id NOT NULL, 
                  msg_id NOT NULL,
                  room_name TEXT  ,
-                 person_name TEXT  ,
+                 email_id TEXT  ,
                  rcvd_time TEXT  '''
                  
     #get the number of answers
@@ -158,11 +158,42 @@ def create_enduser_table(poll_id_value):
     print("Table created: ", polltable[0][0])
     sql_create(create_tbl) 
     
-def save_msg_id(poll_id_value, msg_id , person_name, room_name):
+def save_msg_id(poll_id_value, msg_id , email_id, room_name):
     polltable = sql_query("table_pollid","pollmaster","poll_id",poll_id_value)
     qry = '''INSERT INTO "''' + str(polltable[0][0]) 
-    qry = qry + '''" (poll_id, msg_id, room_name, person_name, rcvd_time) VALUES 
+    qry = qry + '''" (poll_id, msg_id, room_name, email_id, rcvd_time) VALUES 
                     (?,?,?,?,?) '''
     rcvd_time = str(datetime.datetime.now())   
-    print("==========",qry,poll_id_value, msg_id, person_name,room_name,rcvd_time)    
-    sql_edit(qry,(poll_id_value, msg_id, person_name,room_name,rcvd_time))        
+    print("==========",qry,poll_id_value, msg_id, email_id,room_name,rcvd_time)    
+    sql_edit(qry,(poll_id_value, msg_id, email_id,room_name,rcvd_time))  
+
+def save_enduser_inputs(submit_json,email_id):
+    poll_id = submit_json.inputs['poll_id']
+    msg_id = submit_json.messageId
+    #check if the poll exists, if yes,
+      #check if email id exist, if yes
+         update the table
+      # else insert into table
+      return success
+    #Else return poll over
+    
+    
+
+#sample:
+{
+  "id": "Y2lzY29zcGFyazovL3VzL0FUVEFDSE1FTlRfQUNUSU9OLzg0ZTI3NTAwLTkwOTItMTFlYS04N2NkLWM3NmU1YTY4ZWMzMg",
+  "type": "submit",
+  "messageId": "Y2lzY29zcGFyazovL3VzL01FU1NBR0UvZGIzM2NjNDEtOTA4MC0xMWVhLWEwZWYtZGI1M2RhNWE1NWI1",
+  "inputs": {
+    "poll_id": "fP-nYUXyjIc",
+    "submit_value": "poll_enduser_submit",
+    "A4": "anjapaarrrrrr asdf",
+    "A1": "2",
+    "A2": "1",
+    "A3": "3"
+  },
+  "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS82MGQ1YTRiOS02ZWVmLTQ0MjYtYTkxZC1lODAyOWFjYzBhY2U",
+  "roomId": "Y2lzY29zcGFyazovL3VzL1JPT00vYjhkMWU4ZDAtNjNjZC0xMWU4LWE5OGQtYWZiYjZlMjM0NDIx",
+  "created": "2020-05-07T18:42:35.728Z"
+}    
+    

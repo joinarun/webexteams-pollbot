@@ -72,6 +72,7 @@ def webex_teams_webhook_events():
           
           print("NEW MESSAGE IN ROOM '{}'".format(room.title))
           print("FROM '{}'".format(person.displayName))
+          print("person========",person)
           print("MESSAGE '{}'\n".format(message.text))
           
           # This is a VERY IMPORTANT loop prevention control step.
@@ -124,13 +125,14 @@ def webex_teams_webhook_attachements():
         # Get the room details
         room = api.rooms.get(webhook_obj.data.roomId)
         # Get the sender's details
-        person = api.people.get(webhook_obj.data.personId)
-              
+        person = api.people.get(webhook_obj.data.personId) 
+        
         if webhook_obj.data.type == "submit":
             # Get the message details
             submit_json = api.attachment_actions.get(webhook_obj.data.id)       
             print("NEW MESSAGE IN ROOM '{}'".format(room.title))
             print("FROM '{}'".format(person.displayName))
+            print(" Email id: ",person.emails[0])
             print("Input values from submit '{}'\n".format(submit_json))
             
             #bug in webexteamssdk\models\mixins\attachment_action.py", line 73, has to be fixed
@@ -171,6 +173,8 @@ def webex_teams_webhook_attachements():
                 #remove leading and trailing whitespace
                 participants_list = [x.strip() for x in participants_list]
                 print("stripped list:",participants_list)
+                #remove duplicate entries
+                participants_list = list(set(participants_list))
                 #get the list of all rooms this Bot is part of
                 all_rooms = api.rooms.list(type="group")
                 all_room_title = [room.title for room in all_rooms]
@@ -197,8 +201,11 @@ def webex_teams_webhook_attachements():
                    #create a new table 
                    create_enduser_table(submit_json.inputs['poll_id'])
                    for participant in participants_list:
-                     if(re.search(regex,participant)):  
+                     email_id = "default"
+                     room_name = "default"
+                     if(re.search(regex,participant)):                     
                         print("Sending enduser form to email: ",  participant)
+                        email_id = participant
                         rsp_msg = api.messages.create(toPersonEmail=participant, 
                                                       text='Poll end user form sent to all participants', 
                                                       attachments= end_user_form)
@@ -206,14 +213,15 @@ def webex_teams_webhook_attachements():
                         
                      else:
                           room_id = [room.id for room in all_rooms if room.title in participant]
+                          room_name = participant
                           print("Sending enduser form to team space: ",participant , "with room_id: ", room_id[0])
                           rsp_msg = api.messages.create(room_id[0], 
                                               text='Poll end user form sent to all participants', 
                                               attachments= end_user_form)
                           msg_id = rsp_msg.id
                      print("msg_id-------",msg_id)     
-                     #save_msg_id(poll_id_value, msg_id , person_name, room_name)
-                     save_msg_id(submit_json.inputs['poll_id'] , msg_id,str(person.displayName) ,str(room.title))
+                     #save_msg_id(poll_id_value, msg_id , email_id, room_name)
+                     save_msg_id(submit_json.inputs['poll_id'] , msg_id,str(person.emails[0]) ,str(room.title))
                                   
             elif submit_json.inputs['submit_value'] == "poll_abort":
                 print("poll_abort received, removing entry from db")
@@ -222,7 +230,8 @@ def webex_teams_webhook_attachements():
                 api.messages.create(room.id, 
                                     text='poll canceled. Start again',) 
             elif submit_json.inputs['submit_value'] == "poll_enduser_submit":
-                print("poll_enduser_submit received, adding entry from db")
+                print("poll_enduser_submit received, adding entry into db")
+                save_enduser_inputs(submit_json.inputs,str(person.emails[0]))
                 #api.messages.delete(webhook_obj.data.messageId)
                 api.messages.create(room.id, 
                                     text='Thank you for your participation!', 
