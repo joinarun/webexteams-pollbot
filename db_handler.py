@@ -43,6 +43,15 @@ def sql_query3(query):
    rows = cur.fetchall()
    conn.close()
    return rows
+
+def sql_query4(query,var):
+   conn = sqlite3.connect(db_name)
+   #conn.row_factory =sqlite3.Row
+   cur = conn.cursor() 
+   cur.execute(query,var)
+   rows = cur.fetchone()
+   conn.close()
+   return rows
    
 def sql_edit(query,var):
    conn = sqlite3.connect(db_name)
@@ -170,12 +179,39 @@ def save_msg_id(poll_id_value, msg_id , email_id, room_name):
 def save_enduser_inputs(submit_json,email_id):
     poll_id = submit_json.inputs['poll_id']
     msg_id = submit_json.messageId
-    #check if the poll exists, if yes,
-      #check if email id exist, if yes
-         update the table
-      # else insert into table
-      return success
-    #Else return poll over
+    poll_id_exists = sql_query4('SELECT 1 FROM pollmaster WHERE poll_id=? LIMIT 1', (poll_id,))
+    if poll_id_exists is not None:
+       polltable = sql_query("table_pollid","pollmaster","poll_id",poll_id) 
+       polltable = str(polltable[0][0])
+       user_exists = sql_query(1,polltable,"email_id",email_id)
+       inputs_copy = copy.deepcopy(submit_json.inputs)
+       inputs_copy.pop("poll_id")
+       inputs_copy.pop("submit_value")
+       update_query = "UPDATE " + polltable + " SET "
+       insert_query = '''INSERT INTO "''' + polltable + '''" ('''
+       ins_qry_cn = ""
+       ins_qry_val = ""
+       for i , (ques, ans) in enumerate(inputs_copy.items()): 
+           update_query = update_query +  ques + '''="''' + ans + '''" '''
+           ins_qry_cn = ins_qry_cn + ques
+           ins_qry_val = ins_qry_val + ans
+           if i != len(inputs_copy)-1:
+              update_query = update_query + ", "
+              ins_qry_cn = ins_qry_cn + ", " 
+              ins_qry_val = ins_qry_val + ", "              
+       update_query = update_query + "WHERE " +  "email_id" + '''="''' + email_id '''" '''
+       insert_query = insert_query + ins_qry_cn + ")" + "VALUES (" +  ins_qry_val + ")"
+       if user_exists is not None:
+          #UPDATE COMPANY SET ADDRESS = 'Texas' WHERE ID = 6
+          print("update_query: ",update_query)
+          sql_create(update_query)
+       else:
+          #insert
+          print("insert_query: ",insert_query)
+          sql_create(insert_query)          
+       return "yay! your response is submitted "          
+    else:
+       return "whew! The Poll/Survey ended"    
     
     
 

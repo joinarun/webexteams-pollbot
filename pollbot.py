@@ -231,10 +231,10 @@ def webex_teams_webhook_attachements():
                                     text='poll canceled. Start again',) 
             elif submit_json.inputs['submit_value'] == "poll_enduser_submit":
                 print("poll_enduser_submit received, adding entry into db")
-                save_enduser_inputs(submit_json.inputs,str(person.emails[0]))
+                response_val = save_enduser_inputs(submit_json.inputs,str(person.emails[0]))
                 #api.messages.delete(webhook_obj.data.messageId)
                 api.messages.create(room.id, 
-                                    text='Thank you for your participation!', 
+                                    text=response_val, 
                                     )                                            
             elif submit_json.inputs['submit_value'] ==  "poll_stop":
                 print("poll_stop received")                 
