@@ -330,10 +330,8 @@ def A_textinput_generator(k):
 def A_choiceset_generator(choiceList,k):
      A_choiceset_copy = copy.deepcopy(A_choiceset_template) 
      A_choiceset_copy['id'] = k
-     i=0
      for citems in choiceList:
-         i+=1
-         A_choiceset_copy['choices'].append({'title':citems,'value':str(i)})
+         A_choiceset_copy['choices'].append({'title':citems,'value':citems})
      return A_choiceset_copy
 
 def poll_preview_form_generator(poll_creator_form , poll_id): 

@@ -221,7 +221,7 @@ def webex_teams_webhook_attachements():
                           msg_id = rsp_msg.id
                      print("msg_id-------",msg_id)     
                      #save_msg_id(poll_id_value, msg_id , email_id, room_name)
-                     save_msg_id(submit_json.inputs['poll_id'] , msg_id,str(person.emails[0]) ,str(room.title))
+                     save_msg_id(submit_json.inputs['poll_id'] , msg_id,str(email_id) ,str(room_name))
                                   
             elif submit_json.inputs['submit_value'] == "poll_abort":
                 print("poll_abort received, removing entry from db")
@@ -231,7 +231,7 @@ def webex_teams_webhook_attachements():
                                     text='poll canceled. Start again',) 
             elif submit_json.inputs['submit_value'] == "poll_enduser_submit":
                 print("poll_enduser_submit received, adding entry into db")
-                response_val = save_enduser_inputs(submit_json.inputs,str(person.emails[0]))
+                response_val = save_enduser_inputs(submit_json,str(person.emails[0]))
                 #api.messages.delete(webhook_obj.data.messageId)
                 api.messages.create(room.id, 
                                     text=response_val, 

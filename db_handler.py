@@ -18,6 +18,7 @@ def sql_query(col,tab,key,val):
    conn = sqlite3.connect(db_name)
    cur = conn.cursor()   
    val="\""+val+"\""
+   tab="\""+tab+"\""
    #SELECT poll_name FROM pollmaster WHERE share_public="true"
    qry = 'SELECT {} FROM {} WHERE {}={}'.format(col,tab,key,val)
    print(qry)
@@ -173,8 +174,8 @@ def save_msg_id(poll_id_value, msg_id , email_id, room_name):
     qry = qry + '''" (poll_id, msg_id, room_name, email_id, rcvd_time) VALUES 
                     (?,?,?,?,?) '''
     rcvd_time = str(datetime.datetime.now())   
-    print("==========",qry,poll_id_value, msg_id, email_id,room_name,rcvd_time)    
-    sql_edit(qry,(poll_id_value, msg_id, email_id,room_name,rcvd_time))  
+    print("==========",qry,poll_id_value, msg_id, room_name,email_id,rcvd_time)    
+    sql_edit(qry,(poll_id_value, msg_id,room_name, email_id,rcvd_time))  
 
 def save_enduser_inputs(submit_json,email_id):
     poll_id = submit_json.inputs['poll_id']
@@ -187,21 +188,23 @@ def save_enduser_inputs(submit_json,email_id):
        inputs_copy = copy.deepcopy(submit_json.inputs)
        inputs_copy.pop("poll_id")
        inputs_copy.pop("submit_value")
-       update_query = "UPDATE " + polltable + " SET "
+       update_query = '''UPDATE "''' + polltable + '''" SET '''
        insert_query = '''INSERT INTO "''' + polltable + '''" ('''
-       ins_qry_cn = ""
+       ins_qry_cn = "poll_id, msg_id, room_name, email_id, rcvd_time, "
+       ===================================================================== work on the below line
        ins_qry_val = ""
        for i , (ques, ans) in enumerate(inputs_copy.items()): 
            update_query = update_query +  ques + '''="''' + ans + '''" '''
            ins_qry_cn = ins_qry_cn + ques
-           ins_qry_val = ins_qry_val + ans
+           ins_qry_val = ins_qry_val + '''"''' + ans + '''"'''
            if i != len(inputs_copy)-1:
               update_query = update_query + ", "
               ins_qry_cn = ins_qry_cn + ", " 
               ins_qry_val = ins_qry_val + ", "              
-       update_query = update_query + "WHERE " +  "email_id" + '''="''' + email_id '''" '''
+       update_query = update_query + "WHERE " +  "email_id" + '''="''' + email_id + '''" '''
        insert_query = insert_query + ins_qry_cn + ")" + "VALUES (" +  ins_qry_val + ")"
-       if user_exists is not None:
+       print("value of user_exists: ",user_exists)
+       if user_exists:
           #UPDATE COMPANY SET ADDRESS = 'Texas' WHERE ID = 6
           print("update_query: ",update_query)
           sql_create(update_query)
@@ -216,20 +219,20 @@ def save_enduser_inputs(submit_json,email_id):
     
 
 #sample:
-{
-  "id": "Y2lzY29zcGFyazovL3VzL0FUVEFDSE1FTlRfQUNUSU9OLzg0ZTI3NTAwLTkwOTItMTFlYS04N2NkLWM3NmU1YTY4ZWMzMg",
-  "type": "submit",
-  "messageId": "Y2lzY29zcGFyazovL3VzL01FU1NBR0UvZGIzM2NjNDEtOTA4MC0xMWVhLWEwZWYtZGI1M2RhNWE1NWI1",
-  "inputs": {
-    "poll_id": "fP-nYUXyjIc",
-    "submit_value": "poll_enduser_submit",
-    "A4": "anjapaarrrrrr asdf",
-    "A1": "2",
-    "A2": "1",
-    "A3": "3"
-  },
-  "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS82MGQ1YTRiOS02ZWVmLTQ0MjYtYTkxZC1lODAyOWFjYzBhY2U",
-  "roomId": "Y2lzY29zcGFyazovL3VzL1JPT00vYjhkMWU4ZDAtNjNjZC0xMWU4LWE5OGQtYWZiYjZlMjM0NDIx",
-  "created": "2020-05-07T18:42:35.728Z"
-}    
+# {
+  # "id": "Y2lzY29zcGFyazovL3VzL0FUVEFDSE1FTlRfQUNUSU9OLzg0ZTI3NTAwLTkwOTItMTFlYS04N2NkLWM3NmU1YTY4ZWMzMg",
+  # "type": "submit",
+  # "messageId": "Y2lzY29zcGFyazovL3VzL01FU1NBR0UvZGIzM2NjNDEtOTA4MC0xMWVhLWEwZWYtZGI1M2RhNWE1NWI1",
+  # "inputs": {
+    # "poll_id": "fP-nYUXyjIc",
+    # "submit_value": "poll_enduser_submit",
+    # "A4": "anjapaarrrrrr asdf",
+    # "A1": "2",
+    # "A2": "1",
+    # "A3": "3"
+  # },
+  # "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS82MGQ1YTRiOS02ZWVmLTQ0MjYtYTkxZC1lODAyOWFjYzBhY2U",
+  # "roomId": "Y2lzY29zcGFyazovL3VzL1JPT00vYjhkMWU4ZDAtNjNjZC0xMWU4LWE5OGQtYWZiYjZlMjM0NDIx",
+  # "created": "2020-05-07T18:42:35.728Z"
+# }    
     
