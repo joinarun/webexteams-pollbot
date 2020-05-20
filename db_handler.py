@@ -177,7 +177,7 @@ def save_msg_id(poll_id_value, msg_id , email_id, room_name):
     print("==========",qry,poll_id_value, msg_id, room_name,email_id,rcvd_time)    
     sql_edit(qry,(poll_id_value, msg_id,room_name, email_id,rcvd_time))  
 
-def save_enduser_inputs(submit_json,email_id):
+def save_enduser_inputs(submit_json,email_id,room_name):
     poll_id = submit_json.inputs['poll_id']
     msg_id = submit_json.messageId
     poll_id_exists = sql_query4('SELECT 1 FROM pollmaster WHERE poll_id=? LIMIT 1', (poll_id,))
@@ -191,8 +191,8 @@ def save_enduser_inputs(submit_json,email_id):
        update_query = '''UPDATE "''' + polltable + '''" SET '''
        insert_query = '''INSERT INTO "''' + polltable + '''" ('''
        ins_qry_cn = "poll_id, msg_id, room_name, email_id, rcvd_time, "
-       ===================================================================== work on the below line
-       ins_qry_val = ""
+       rcvd_time = str(datetime.datetime.now())
+       ins_qry_val = '''"''' + poll_id + '''",''' + '''"''' + msg_id + '''",''' + '''"''' + room_name + '''",''' + '''"''' + email_id + '''",'''+ '''"''' + rcvd_time + '''",'''
        for i , (ques, ans) in enumerate(inputs_copy.items()): 
            update_query = update_query +  ques + '''="''' + ans + '''" '''
            ins_qry_cn = ins_qry_cn + ques
